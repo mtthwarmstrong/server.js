@@ -4,7 +4,8 @@
 <head>
     <title>SWAG QUIZ</title>
     <link rel="stylesheet" type="text/css" href="css/quiz.css">
-        <script type="text/javascript" src='quiz.json'></script>
+        <script type="text/javascript" src='js/jquery.js'></script>
+       
 </head>
 
 <body>
@@ -67,11 +68,22 @@
     <button id='nextButton' >Next</button>
 </div>
 
+<div id="images"> 
+</div>
 
 <div id='resultsfrm'>
     <div id='Rheader'>
         <h1>Results: </h1>
     </div>
+
+<div id='table'>
+<table id="myTable" border="1" align="center">
+</table>
+</div>
+
+<p> </p> 
+<p> </p> 
+
 
     <canvas id="piechart" width="400" height="400">
 </canvas>
@@ -79,6 +91,7 @@
     <div id='ratioheader'>
         <h1 id='ratio'></h1>
     </div>
+
     <div id='returnbutton'>
      <button id='returnButton' >Return to Beggining</button>
      </div>

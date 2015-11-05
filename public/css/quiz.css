@@ -73,6 +73,13 @@ h2 {
     color: black;
     text-align: CENTER;
 }
+#images {
+    text-align: CENTER; 
+}
+#table {
+    color: black;
+    text-align: CENTER; 
+}
 #resultsfrm{
     text-align: CENTER;
 }

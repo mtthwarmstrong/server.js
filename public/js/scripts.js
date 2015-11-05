@@ -1,23 +1,24 @@
 /*
 Author: Matt Armstrong
 Name: Random Quiz 
-Comments: Was an extremely fulfilling and fun project to work on. It was difficult at times because lots of the 
+Comments: 
+Phase I: Was an extremely fulfilling and fun project to work on. It was difficult at times because lots of the 
 subject matter was new and javascript can sometimes load/work with different outcomes than expected. 
 All in all was a very fun project and I learned a lot about javascript.
+Phase II: This was one of the hardest computer science projects I have done to date but that makes the experience
+all the more fulfilling when you discover how to do something. I really enjoyed every step of this project and am
+looking forward to phase III!
 */
-
 
 document.getElementById("quizform").style.visibility = "hidden";
 document.getElementById("button").style.visibility = "hidden";
-
-
 var button = document.getElementById("submit"); 
 var next = document.getElementById("nextButton"); 
 var back = document.getElementById("backButton"); 
 var return1 = document.getElementById("returnButton");   
 
 
-button.addEventListener("click", generateQuestion); //when submit is clicked on name page
+button.addEventListener("click", loadQuiz); //when submit is clicked on name page
 next.addEventListener("click", nextQuestion); //when next button is clicked
 back.addEventListener("click", backQuestion); //when back button is clicked
 return1.addEventListener("click", returnQuestion); //when return to beggining button is clicked
@@ -27,10 +28,23 @@ var correct = 0;
 var incorrect = 0;
 var accounts = [];
 var answer = [];
+var isItCorrect = [];
+var quiz;
 
 
-function generateQuestion(){    
 
+
+
+function loadQuiz(){
+    $.get("/quiz", function(data, status){
+        quiz = JSON.parse(data);
+        generateQuestion();
+ });
+ }//loads the json file from data
+
+
+
+function generateQuestion(){   
     var x = document.getElementById("nameform");
     var text = "";
     var i;
@@ -42,6 +56,7 @@ function generateQuestion(){
     document.getElementById("backButton").style.visibility = "hidden";
     document.getElementById("quizform").style.visibility = "visible";
     document.getElementById("button").style.visibility = "visible";
+    document.getElementById("images").style.visibility = "visible";
     document.getElementById("name_display").style.visibility = "visible";
     document.getElementById("nameoverall").style.visibility = "hidden";
     document.getElementById("nameform").style.visibility = "hidden";
@@ -56,6 +71,22 @@ for(var i=5;i>quiz.questions[count].answers.length;i--){
    document.getElementById("c"+i+"1").style.visibility = "hidden";
 }//hiding buttons when there are less then 5 answers
 
+
+$.getJSON("http://api.flickr.com/services/feeds/photos_public.gne?jsoncallback=?",
+  {
+    tags: String(quiz.questions[0].meta_tags),
+    tagmode: "any",
+    format: "json"
+  },
+  function(data) {
+    $.each(data.items, function(i,item){
+      $("<img />").attr("src", item.media.m).appendTo("#images");
+      if ( i == 0 ) return false;
+    });
+  });//gets photo for first question
+
+
+
   for (var i = 0; i <quiz.questions.length; i++) {
       accounts[i] = " ";
   }
@@ -65,6 +96,13 @@ for(var i=5;i>quiz.questions[count].answers.length;i--){
       answer[i] = " ";
   }
   return answer;//returning the array that will add up correct and incorrect answers
+
+
+for (var i = 0; i <quiz.questions.length; i++) {
+      isItCorrect[i] = " ";
+  }
+  return isItCorrect;//writes inccorecly or correctly for results page
+
 
 }//generating first question
 
@@ -94,7 +132,7 @@ for(var i=1;i<=quiz.questions[count].answers.length;i++){
             document.getElementById("c"+i).style.visibility = "visible";
             document.getElementById("c"+i+"1").style.visibility = "visible";
     if(document.getElementById("c"+i).checked == true){
-        if(quiz.questions[count-1].answers[i-1] == quiz.questions[count-1].correctanswer){
+        if(quiz.questions[count-1].answers[i-1] == quiz.questions[count-1].correct_answer){
         answer[count-1] = quiz.questions[count-1].answers[i-1];
         }//if answer selected is the correct answer then add it to the array
 
@@ -104,8 +142,12 @@ for(var i=1;i<=quiz.questions[count].answers.length;i++){
             accounts[count-1] = "c"+i; // set the account array spot to the selected button
     }
 
+
+   
+
     document.getElementById("c"+i).checked = false;
 }
+
     document.getElementById("question").innerHTML = quiz.questions[count].text; //write the question
 
 for(var i=1;i<=quiz.questions[count].answers.length;i++){
@@ -118,14 +160,29 @@ for(var i=5;i>quiz.questions[count].answers.length;i--){
 }//hiding buttons when there are less then 5 answers
 
 
-    document.getElementById(accounts[count]).checked = true;
+document.getElementById("images").innerHTML = "";
+ $.getJSON("http://api.flickr.com/services/feeds/photos_public.gne?jsoncallback=?",
+  {
+    tags: String(quiz.questions[count].meta_tags),
+    tagmode: "any",
+    format: "json"
+  },
+  function(data) {
+    $.each(data.items, function(i,item){
+      $("<img />").attr("src", item.media.m).appendTo("#images");
+      if ( i == 0 ) return false;
+    });
+  });
+
+
+document.getElementById(accounts[count]).checked = true;
 
 }//before one hits the submit button
     else {
 
     for(var i=1;i<=quiz.questions[count].answers.length;i++){
     if(document.getElementById("c"+i).checked == true){
-        if(quiz.questions[count].answers[i-1] == quiz.questions[count].correctanswer){
+        if(quiz.questions[count].answers[i-1] == quiz.questions[count].correct_answer){
         answer[count] = quiz.questions[count].answers[i-1];
         }//last question's button selected equals correct answer
 
@@ -133,19 +190,42 @@ for(var i=5;i>quiz.questions[count].answers.length;i--){
             }
 
             accounts[count] = "c"+i;
+            
     }
 }
 
 
 for (var i = 0; i <quiz.questions.length; i++) {
-    if(answer[i] == quiz.questions[i].correctanswer){
+    if(answer[i] == quiz.questions[i].correct_answer){
     correct++;
+    quiz.questions[i].global_correct++;
+    quiz.questions[i].global_total++;
+    isItCorrect[i]= "correctly";
     }//adds up correct answers      
 
     else{
         incorrect++
+        quiz.questions[i].global_total++;
+        isItCorrect[i]= "incorrectly";
+
     }//adds up incorrect answers
 }
+
+
+
+       var stuffToSend = JSON.stringify(quiz); //Array 
+       console.log(stuffToSend);
+    $.ajax({
+        url : "/quiz",
+        type: "POST",
+        dataType: "json",
+        contentType: "application/json; charset=utf-8",
+        data : stuffToSend
+    });
+
+
+document.getElementById("images").innerHTML = "";
+document.getElementById("images").style.visibility = "hidden";
 document.getElementById("quizform").style.visibility = "hidden";
 document.getElementById("c1").style.visibility = "hidden";
 document.getElementById("c2").style.visibility = "hidden";
@@ -157,11 +237,41 @@ document.getElementById("c21").style.visibility = "hidden";
 document.getElementById("c31").style.visibility = "hidden";
 document.getElementById("c41").style.visibility = "hidden";
 document.getElementById("c51").style.visibility = "hidden";
+document.getElementById("name_display").style.visibility = "hidden";
 document.getElementById("button").style.visibility = "hidden";
 document.getElementById("backButton").style.visibility = "hidden";
-document.getElementById("name_display").style.visibility = "hidden";
 document.getElementById("resultsfrm").style.visibility = "visible";
 document.getElementById("piechart").style.visibility = "visible";
+document.getElementById("myTable").style.visibility = "visible";
+
+var table = document.getElementById("myTable");
+var cell1;
+var cell2;
+for(var i=quiz.questions.length-1; i>=0; i-=2){
+    var row = table.insertRow(0);
+    var cell1 = row.insertCell(0);
+    var cell2 = row.insertCell(1);
+    var y = "";
+    var z = "";
+
+    if(isItCorrect[i] == "correctly"){
+        z= "! :)"
+    }
+    else{
+        z= ". :("
+    }
+    if(isItCorrect[i-1] == "correctly"){
+        y= "! :)"
+    }
+    else{
+        y= ". :("
+    }
+
+    cell1.innerHTML = "Question " + i + ":  "  + (100*(quiz.questions[i-1].global_correct/quiz.questions[i-1].global_total)).toFixed(2) + "% of other players got this correct. You answered this question " + isItCorrect[i-1] + y;
+    cell2.innerHTML = "Question " + (i+1) + ":  "  + (100*(quiz.questions[i].global_correct/quiz.questions[i].global_total)).toFixed(2) + "% of other players got this correct. You answered this question " + isItCorrect[i] + z;
+}
+
+
 document.getElementById("ratio").innerHTML = "Incorrect: " + incorrect + "  Correct: " + correct + "  Incorrect/Correct: = " + incorrect/correct;   
  piChart();
 }//after the submit button is hit
@@ -237,6 +347,20 @@ document.getElementById("c"+i).style.visibility = "visible";
 
 }
 
+document.getElementById("images").innerHTML = "";
+ $.getJSON("http://api.flickr.com/services/feeds/photos_public.gne?jsoncallback=?",
+  {
+    tags: String(quiz.questions[count].meta_tags),
+    tagmode: "any",
+    format: "json"
+  },
+  function(data) {
+    $.each(data.items, function(i,item){
+      $("<img />").attr("src", item.media.m).appendTo("#images");
+      if ( i == 0 ) return false;
+    });
+  });
+
 }
 
 
@@ -244,13 +368,20 @@ function returnQuestion(){
     incorrect = 0;
     correct = 0;
     count = 0;
+    var accounts = [];
+    var answer = [];
+    var isItCorrect = [];
+    var quiz;
+
+    document.getElementById("myTable").innerHTML= "";
     document.getElementById("resultsfrm").style.visibility = "hidden";
     document.getElementById("quizform").style.visibility = "hidden";
     document.getElementById("button").style.visibility = "hidden";
     document.getElementById("piechart").style.visibility = "hidden";
+    document.getElementById("myTable").style.visibility = "hidden";
+    document.getElementById("table").style.visibility = "hidden";
     document.getElementById("nameoverall").style.visibility = "visible";
     document.getElementById("nameform").style.visibility = "visible";
-
 }//sets everything to default and returns back to first page
 
 
